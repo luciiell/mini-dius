@@ -4,6 +4,9 @@ const sharp = require('sharp');
 const app = express();
 const PORT = process.env.PORT || 8787;
 
+const DEFAULT_FRAME =
+  'https://www.image2url.com/r2/default/images/1789077175552-29590485-7f18-4692-9d4a-fdda92e2af21.png';
+
 const DEFAULT_BACKGROUND =
   'https://www.image2url.com/r2/default/images/1789074415076-cf294e99-5307-4993-96ab-1907f3e6dcdf.png';
 
@@ -23,7 +26,10 @@ async function fetchBuffer(url) {
     throw new Error(`Could not fetch image: ${response.status}`);
   }
 
-  return Buffer.from(await response.arrayBuffer());
+  return {
+    buffer: Buffer.from(await response.arrayBuffer()),
+    mime: response.headers.get('content-type') || 'image/png'
+  };
 }
 
 function toDataUri(buffer, mime = 'image/png') {
@@ -44,11 +50,28 @@ app.get('/render-profile', async (req, res) => {
       cards = '0',
       gems = '0',
       lootboxes = '0',
-      backgroundUrl = DEFAULT_BACKGROUND
+      backgroundUrl = DEFAULT_BACKGROUND,
+      frameUrl = ''
     } = req.query;
 
-    const backgroundBuffer = await fetchBuffer(backgroundUrl);
-    const backgroundData = toDataUri(backgroundBuffer);
+    const backgroundAsset = await fetchBuffer(backgroundUrl);
+    const backgroundData = toDataUri(backgroundAsset.buffer, backgroundAsset.mime);
+
+    let frameData = '';
+    if (frameUrl) {
+      try {
+        const frameAsset = await fetchBuffer(frameUrl);
+        frameData = toDataUri(frameAsset.buffer, frameAsset.mime);
+      } catch (error) {
+        console.warn('Frame could not be loaded:', error.message);
+        try {
+          const fallbackFrame = await fetchBuffer(DEFAULT_FRAME);
+          frameData = toDataUri(fallbackFrame.buffer, fallbackFrame.mime);
+        } catch (fallbackError) {
+          console.warn('Default frame could not be loaded:', fallbackError.message);
+        }
+      }
+    }
 
     let avatarMarkup = '';
 
@@ -231,6 +254,17 @@ app.get('/render-profile', async (req, res) => {
           font-size="21"
           fill="#302c36"
         >Your profile, your collection, your dream archive.</text>
+        ${frameData ? `
+          <image
+            href="${frameData}"
+            x="0"
+            y="0"
+            width="1024"
+            height="700"
+            preserveAspectRatio="none"
+            pointer-events="none"
+          />
+        ` : ''}
       </svg>
     `;
 
@@ -251,6 +285,6 @@ app.get('/', (req, res) => {
   res.send('Mini-dius profile renderer is running.');
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Profile renderer running at http://localhost:${PORT}`);
 });
