@@ -57,21 +57,6 @@ app.get('/render-profile', async (req, res) => {
     const backgroundAsset = await fetchBuffer(backgroundUrl);
     const backgroundData = toDataUri(backgroundAsset.buffer, backgroundAsset.mime);
 
-    let frameData = '';
-    if (frameUrl) {
-      try {
-        const frameAsset = await fetchBuffer(frameUrl);
-        frameData = toDataUri(frameAsset.buffer, frameAsset.mime);
-      } catch (error) {
-        console.warn('Frame could not be loaded:', error.message);
-        try {
-          const fallbackFrame = await fetchBuffer(DEFAULT_FRAME);
-          frameData = toDataUri(fallbackFrame.buffer, fallbackFrame.mime);
-        } catch (fallbackError) {
-          console.warn('Default frame could not be loaded:', fallbackError.message);
-        }
-      }
-    }
 
     let avatarMarkup = '';
 
