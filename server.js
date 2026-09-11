@@ -4,6 +4,7 @@ const sharp = require('sharp');
 const app = express();
 const PORT = process.env.PORT || 8787;
 
+
 const DEFAULT_BACKGROUND =
   'https://www.image2url.com/r2/default/images/1789074415076-cf294e99-5307-4993-96ab-1907f3e6dcdf.png';
 
@@ -47,10 +48,12 @@ app.get('/render-profile', async (req, res) => {
       cards = '0',
       gems = '0',
       lootboxes = '0',
-      backgroundUrl = DEFAULT_BACKGROUND
+      backgroundUrl = DEFAULT_BACKGROUND,
     } = req.query;
 
-    const backgroundData = '';
+    const backgroundAsset = await fetchBuffer(backgroundUrl);
+    const backgroundData = toDataUri(backgroundAsset.buffer, backgroundAsset.mime);
+
 
     let avatarMarkup = '';
 
@@ -67,7 +70,6 @@ app.get('/render-profile', async (req, res) => {
           </defs>
 
           <image
-            href="${avatarData}"
             xlink:href="${avatarData}"
             x="43"
             y="43"
@@ -94,7 +96,6 @@ app.get('/render-profile', async (req, res) => {
     const svg = `
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        xmlns:xlink="http://www.w3.org/1999/xlink"
         width="1024"
         height="700"
         viewBox="0 0 1024 700"
@@ -106,8 +107,14 @@ app.get('/render-profile', async (req, res) => {
           </linearGradient>
         </defs>
 
-        <rect x="0" y="0" width="1024" height="700" fill="#eee8f7"/>
-        ${backgroundData ? `<image href="${backgroundData}" x="0" y="0" width="1024" height="700" preserveAspectRatio="xMidYMid slice"/>` : ''}
+        <image
+          href="${backgroundData}"
+          x="0"
+          y="0"
+          width="1024"
+          height="700"
+          preserveAspectRatio="xMidYMid slice"
+        />
 
         <rect
           x="0"
