@@ -4,8 +4,6 @@ const sharp = require('sharp');
 const app = express();
 const PORT = process.env.PORT || 8787;
 
-const DEFAULT_FRAME =
-  'https://www.image2url.com/r2/default/images/1789077175552-29590485-7f18-4692-9d4a-fdda92e2af21.png';
 
 const DEFAULT_BACKGROUND =
   'https://www.image2url.com/r2/default/images/1789074415076-cf294e99-5307-4993-96ab-1907f3e6dcdf.png';
@@ -51,7 +49,6 @@ app.get('/render-profile', async (req, res) => {
       gems = '0',
       lootboxes = '0',
       backgroundUrl = DEFAULT_BACKGROUND,
-      frameUrl = ''
     } = req.query;
 
     const backgroundAsset = await fetchBuffer(backgroundUrl);
@@ -63,7 +60,7 @@ app.get('/render-profile', async (req, res) => {
     if (avatarUrl) {
       try {
         const avatarBuffer = await fetchBuffer(avatarUrl);
-        const avatarData = toDataUri(avatarBuffer);
+        const avatarData = toDataUri(avatarBuffer.buffer, avatarBuffer.mime);
 
         avatarMarkup = `
           <defs>
@@ -73,7 +70,7 @@ app.get('/render-profile', async (req, res) => {
           </defs>
 
           <image
-            href="${avatarData}"
+            xlink:href="${avatarData}"
             x="43"
             y="43"
             width="144"
@@ -239,17 +236,6 @@ app.get('/render-profile', async (req, res) => {
           font-size="21"
           fill="#302c36"
         >Your profile, your collection, your dream archive.</text>
-        ${frameData ? `
-          <image
-            href="${frameData}"
-            x="0"
-            y="0"
-            width="1024"
-            height="700"
-            preserveAspectRatio="none"
-            pointer-events="none"
-          />
-        ` : ''}
       </svg>
     `;
 
